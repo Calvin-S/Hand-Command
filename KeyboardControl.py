@@ -38,3 +38,13 @@ class keyboardControl():
     
     def enter(self):
         pyautogui.press('enter')
+    
+    def volumeMute(self):
+        pyautogui.press('volumemute')
+
+    def volumeup(self):
+        pyautogui.press('volumeup')
+
+    def volumedown(self):
+        pyautogui.press('volumedown')
+

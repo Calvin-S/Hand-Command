@@ -10,6 +10,7 @@ class handDetector():
         self.hands = self.mpHands.Hands(mode, maxHands, detectionConf, trackConf)
         self.mpDraw = mp.solutions.drawing_utils
     
+    # Use mediapipe to find hands
     def findHands(self, img, draw = False):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.hands.process(imgRGB)
@@ -39,18 +40,19 @@ class settings():
     def __init__(self):  
         self.cooldownTime = 0.5
         self.keyboard = keyboardControl()
-        self.reset()
-        self.modes = ['mouse mode', 'switch tab mode']
+        self.modes = ['mouse mode', 'switch tab mode', 'music mode']
         self.activeModes = self.modes
         self.index = 0
+        self.lastOperation = 'reset'
+        self.reset()
     
     def incIndex(self):
         self.index = (self.index + 1) % len(self.modes)
 
     def reset(self):
         self.positions = ['reset', 'handClosed', 'handOpen', 'indexMiddle', 'indexMiddleRing', 'thumbIndexMiddle', 
-        'pinkyIndexMiddle', 'thumb', 'index', 'pinky']
-        self.mouseMode()
+        'pinkyIndexMiddle', 'thumb', 'index', 'ring', 'pinky']
+        self.setMode()
         self.lastCalled = {}
         for i in self.positions:
             self.lastCalled[i] = 0
@@ -60,39 +62,50 @@ class settings():
             self.mouseMode()
         elif self.index == 1:
             self.switchTabMode()
+        elif self.index == 2:
+            self.musicMode()
+        self.fillEmptyPos()
     
     def fillEmptyPos(self):
         for i in self.positions:
             if not i in self.settings:
-                self.settings.update({i: self.keyboard.nothing})
+                self.settings.update({i: [self.keyboard.nothing, 1]})
+        self.settings.update({'ring': [exit, 4]})
+        self.settings.update({'handOpen': [self.modeSwitch, 1]})
     
+    # Sets to mouse mode with the corresponding hand positions and functions called
     def mouseMode(self):
         self.settings = {
-            'handOpen': self.switchMode, 
-            'indexMiddle': self.keyboard.moveMouse,
-            'thumbIndexMiddle': self.keyboard.click,
-            'pinkyIndexMiddle': self.keyboard.rightClick}
-        self.fillEmptyPos()
+            'indexMiddle': [self.keyboard.moveMouse, 1],
+            'thumbIndexMiddle': [self.keyboard.click, 0.5], 
+            'pinkyIndexMiddle': [self.keyboard.rightClick, 0.5]}
     
+    # Sets to tab switching mode with the corresponding hand positions and functions called
     def switchTabMode(self):
+        self.settings = { 
+            'indexMiddle': [self.keyboard.altTab, 2],
+            'indexMiddleRing': [self.keyboard.winTab, 2],
+            'index': [self.keyboard.enter, 1],
+            'thumb': [self.keyboard.leftArrow, 1],
+            'pinky': [self.keyboard.rightArrow, 1]}
+    
+    def musicMode(self):
         self.settings = {
-            'handOpen': self.switchMode, 
-            'indexMiddle': self.keyboard.altTab,
-            'indexMiddleRing': self.keyboard.winTab,
-            'index': self.keyboard.enter,
-            'thumb': self.keyboard.leftArrow,
-            'pinky': self.keyboard.rightArrow}
-        self.fillEmptyPos()
+            'thumb': [self.keyboard.volumeup, 0.05],
+            'pinky': [self.keyboard.volumedown, 0.05],
+            'index': [self.keyboard.volumeMute, 1]
+        }
 
-    def switchMode(self):
+    def modeSwitch(self):
         self.incIndex()
         self.keyboard.alert(self.activeModes[self.index])
         self.setMode()
     
-    def operate(self, key, optionalBool = True, cooldownMultiplier = 1):
-        if time.time() - self.lastCalled[key] > self.cooldownTime * cooldownMultiplier and optionalBool:
-            self.settings[key]()
+    def operate(self, key, optionalBool = True):
+        if time.time() - self.lastCalled[key] > self.cooldownTime * self.settings[key][1] and optionalBool:
+            self.settings[key][0]()
             self.lastCalled[key] = time.time()
+            self.lastOperation = key
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -104,7 +117,6 @@ def main():
     while True:
         if time.time() - startTime > 120:
             break
-        # time.sleep(0.2)
         success, img = cap.read()
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = detector.findHands(img, True)
@@ -122,14 +134,10 @@ def main():
             newPos = [lmList[12][1], lmList[12][2]]
             firstCall = time.time() - s.lastCalled['indexMiddle'] > s.cooldownTime / 2
             # Thumb is out, so left click
-            if time.time() - s.lastCalled['thumbIndexMiddle'] > s.cooldownTime and pos.isFinger(0):
-                s.settings['thumbIndexMiddle']()
-                s.lastCalled['thumbIndexMiddle'] = time.time()
+            s.operate('thumbIndexMiddle', pos.isFinger(0))
             # Pinky is out, so right click
-            elif time.time() - s.lastCalled['pinkyIndexMiddle'] > s.cooldownTime and pos.isFinger(4):
-                s.settings['pinkyIndexMiddle']()
-                s.lastCalled['pinkyIndexMiddle'] = time.time()
-            s.settings['indexMiddle'](firstCall, newPos)
+            s.operate('pinkyIndexMiddle', pos.isFinger(4))
+            s.settings['indexMiddle'][0](firstCall, newPos)
             s.lastCalled['indexMiddle'] = time.time()
         elif pos.areFingersStraight([1,2]):
             s.operate('indexMiddle')
@@ -139,11 +147,12 @@ def main():
             s.operate('thumb')
         elif pos.areFingersStraight([1]):
             s.operate('index')
+        elif pos.areFingersStraight([3]):
+            s.operate('ring', s.lastOperation == 'ring', 4)
         elif pos.areFingersStraight([4]):
             s.operate('pinky')
         elif pos.areFingersStraight([]):
-            s.lastCalled['handClosed'] = time.time()
-            print("hand closed")
+            s.operate('handClosed')
         else:
             s.lastCalled['reset'] = time.time()
             print("nothing")
