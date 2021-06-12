@@ -5,7 +5,7 @@ from KeyboardControl import keyboardControl
 from PositionDetect import positionDetector
 
 class handDetector():
-    def __init__(self, mode = False, maxHands = 2, detectionConf = 0.7, trackConf = 0.7):
+    def __init__(self, mode = False, maxHands = 1, detectionConf = 0.6, trackConf = 0.7):
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(mode, maxHands, detectionConf, trackConf)
         self.mpDraw = mp.solutions.drawing_utils
@@ -40,7 +40,7 @@ class settings():
     def __init__(self):  
         self.cooldownTime = 0.5
         self.keyboard = keyboardControl()
-        self.modes = ['mouse mode', 'switch tab mode', 'music mode']
+        self.modes = ['mouse mode', 'switch window mode', 'switch tab mode', 'music mode']
         self.activeModes = self.modes
         self.index = 0
         self.lastOperation = 'reset'
@@ -61,8 +61,10 @@ class settings():
         if self.index == 0:
             self.mouseMode()
         elif self.index == 1:
-            self.switchTabMode()
+            self.switchWindowMode()
         elif self.index == 2:
+            self.switchTabMode()
+        elif self.index == 3:
             self.musicMode()
         self.fillEmptyPos()
     
@@ -80,8 +82,8 @@ class settings():
             'thumbIndexMiddle': [self.keyboard.click, 0.5], 
             'pinkyIndexMiddle': [self.keyboard.rightClick, 0.5]}
     
-    # Sets to tab switching mode with the corresponding hand positions and functions called
-    def switchTabMode(self):
+    # Sets to Window switching mode with the corresponding hand positions and functions called
+    def switchWindowMode(self):
         self.settings = { 
             'indexMiddle': [self.keyboard.altTab, 2],
             'indexMiddleRing': [self.keyboard.winTab, 2],
@@ -89,6 +91,14 @@ class settings():
             'thumb': [self.keyboard.leftArrow, 1],
             'pinky': [self.keyboard.rightArrow, 1]}
     
+    def switchTabMode(self):
+        self.settings = {
+            'thumb': [self.keyboard.ctrlShiftTab, 1],
+            'pinky': [self.keyboard.ctrlTab, 1],
+            'indexMiddle': [self.keyboard.scrollDown, 1],
+            'indexMiddleRing': [self.keyboard.scrollUp, 1]
+        }
+
     def musicMode(self):
         self.settings = {
             'thumb': [self.keyboard.volumeup, 0.05],
@@ -106,24 +116,26 @@ class settings():
             self.settings[key][0]()
             self.lastCalled[key] = time.time()
             self.lastOperation = key
+            print(key)
 
 def main():
     cap = cv2.VideoCapture(0)
     detector = handDetector()
     pos = positionDetector()
     s = settings()
-
     startTime = time.time()
     while True:
         if time.time() - startTime > 120:
             break
-        success, img = cap.read()
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = detector.findHands(img, True)
+        time.sleep(0.2)
+        success, img0 = cap.read()
+        imgRGB = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
+        img = detector.findHands(img0, True)
         lmList = detector.findPosition(img)
-
+        cv2.imshow("Image", img0)
         if len(lmList) == 0:
             lastCooldownTrigger = time.time()
+            cv2.waitKey(1)
             continue
         pos.update(lmList)
         
@@ -139,16 +151,16 @@ def main():
             s.operate('pinkyIndexMiddle', pos.isFinger(4))
             s.settings['indexMiddle'][0](firstCall, newPos)
             s.lastCalled['indexMiddle'] = time.time()
-        elif pos.areFingersStraight([1,2]):
-            s.operate('indexMiddle')
         elif pos.areFingersStraight([1,2,3]):
             s.operate('indexMiddleRing')
+        elif pos.areFingersStraight([1,2]):
+            s.operate('indexMiddle')
         elif pos.areFingersStraight([0]):
             s.operate('thumb')
         elif pos.areFingersStraight([1]):
             s.operate('index')
         elif pos.areFingersStraight([3]):
-            s.operate('ring', s.lastOperation == 'ring', 4)
+            s.operate('ring', s.lastOperation == 'ring')
         elif pos.areFingersStraight([4]):
             s.operate('pinky')
         elif pos.areFingersStraight([]):
@@ -157,7 +169,6 @@ def main():
             s.lastCalled['reset'] = time.time()
             print("nothing")
 
-        cv2.imshow("Image", img)
         cv2.waitKey(1)
 
 if __name__ == "__main__":

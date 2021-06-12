@@ -43,19 +43,21 @@ class positionDetector():
 
     # Determine whether a given finger is straight out or not
     # fingerNo: thumb = 0, index - 1, middle - 2, ring - 3, pinky - 4
-    def isFingerStraightOut(self, fingerNo, wantOpen = False):
+    def isFingerStraightOut(self, fingerNo, wantOpen = False, shouldPrint = False):
         fingerDiff = self.diff[fingerNo]
         fingerAngles = self.angles[fingerNo]
         isOpen = max(fingerDiff) == fingerDiff[0]
         isStraight = abs(max(fingerAngles) - min(fingerAngles)) < 0.35
         if fingerNo != 0:
-            isOpen = isOpen and abs(fingerDiff[2] - fingerDiff[1]) < fingerDiff[1] * 0.3
+            isOpen = isOpen and abs(fingerDiff[2] - fingerDiff[1]) < fingerDiff[1] * 0.4
         # Handle thumb
         if fingerNo == 0:
             isStraight = abs(max(fingerAngles) - min(fingerAngles)) < 0.45
             if wantOpen:
                     isStraight = isStraight and math.dist(self.points[4], self.points[5]) < math.dist(self.points[4], self.points[9])
                     isStraight = isStraight and math.dist(self.points[4], self.points[5]) > math.dist(self.points[5], self.points[9])
+        if shouldPrint:
+           print(fingerNo, isStraight, isOpen)
         return isOpen and isStraight
     
     # Returns true when the corresponding fingers from fingerNos is straight 
@@ -75,7 +77,7 @@ class positionDetector():
         if not self.landmarks:
             return False
         for i in range(5):
-            isOpen = isOpen and self.isFingerStraightOut(i, True)
+            isOpen = isOpen and self.isFingerStraightOut(i, True, True)
         return isOpen
     
     # Returns true when all fingers on hand is closed

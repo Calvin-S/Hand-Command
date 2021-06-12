@@ -14,6 +14,18 @@ class keyboardControl():
     def altTab (self):
         pyautogui.hotkey('alt', 'tab')
 
+    def ctrlTab (self):
+        pyautogui.hotkey('ctrl', 'tab')
+    
+    def ctrlShiftTab (self):
+        pyautogui.hotkey('ctrl','shift', 'tab')
+
+    def scrollDown(self):
+        pyautogui.scroll(-600)
+
+    def scrollUp(self):
+        pyautogui.scroll(600)
+
     def winTab(self):
         pyautogui.hotkey('win', 'tab')
     
