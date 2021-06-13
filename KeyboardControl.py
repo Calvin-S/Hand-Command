@@ -59,4 +59,7 @@ class keyboardControl():
 
     def volumedown(self):
         pyautogui.press('volumedown')
+    
+    def playpause(self):
+        pyautogui.press('playpause')
 

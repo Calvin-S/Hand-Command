@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
+import tkinter
 from KeyboardControl import keyboardControl
 from PositionDetect import positionDetector
 
@@ -41,17 +42,21 @@ class settings():
         self.cooldownTime = 0.5
         self.keyboard = keyboardControl()
         self.modes = ['mouse mode', 'switch window mode', 'switch tab mode', 'music mode']
-        self.activeModes = self.modes
+        self.activeSettings = [1] * len(self.modes) # Tells us which modes are active
         self.index = 0
         self.lastOperation = 'reset'
         self.reset()
     
     def incIndex(self):
+        if sum(self.activeSettings) == 0:
+            return
         self.index = (self.index + 1) % len(self.modes)
+        while self.activeSettings[self.index] == 0:
+            self.index = (self.index + 1) % len(self.modes)
 
     def reset(self):
         self.positions = ['reset', 'handClosed', 'handOpen', 'indexMiddle', 'indexMiddleRing', 'thumbIndexMiddle', 
-        'pinkyIndexMiddle', 'thumb', 'index', 'ring', 'pinky']
+        'pinkyIndexMiddle', 'indexMiddleRingPinky', 'thumb', 'index', 'ring', 'pinky']
         self.setMode()
         self.lastCalled = {}
         for i in self.positions:
@@ -68,12 +73,29 @@ class settings():
             self.musicMode()
         self.fillEmptyPos()
     
+    def updateSettings(self):
+        self.setting = tkinter.Tk()
+        self.setting.title('Settings')
+        tempVar = [tkinter.IntVar() for i in range(len(self.modes))] 
+        for i in range(len(self.modes)):
+            if self.activeSettings[i] == 1:
+                tempVar[i].set(1)
+
+        for i in range(len(self.modes)):
+            tkinter.Checkbutton(self.setting, text=self.modes[i], variable=tempVar[i], onvalue = 1, offvalue = 0).grid(row=i, sticky=tkinter.W)
+        self.setting.mainloop()
+        for i in range(len(self.modes)):
+            self.activeSettings[i] = tempVar[i].get()
+        if sum(self.activeSettings) == 0:
+            self.activeSettings[0] = 1
+    
     def fillEmptyPos(self):
         for i in self.positions:
             if not i in self.settings:
                 self.settings.update({i: [self.keyboard.nothing, 1]})
         self.settings.update({'ring': [exit, 4]})
         self.settings.update({'handOpen': [self.modeSwitch, 1]})
+        self.settings.update({'indexMiddleRingPinky': [self.updateSettings, 2]})
     
     # Sets to mouse mode with the corresponding hand positions and functions called
     def mouseMode(self):
@@ -103,12 +125,13 @@ class settings():
         self.settings = {
             'thumb': [self.keyboard.volumeup, 0.05],
             'pinky': [self.keyboard.volumedown, 0.05],
-            'index': [self.keyboard.volumeMute, 1]
+            'index': [self.keyboard.volumeMute, 1],
+            'indexMiddle': [self.keyboard.playpause, 2]
         }
 
     def modeSwitch(self):
         self.incIndex()
-        self.keyboard.alert(self.activeModes[self.index])
+        self.keyboard.alert(self.modes[self.index])
         self.setMode()
     
     def operate(self, key, optionalBool = True):
@@ -116,7 +139,6 @@ class settings():
             self.settings[key][0]()
             self.lastCalled[key] = time.time()
             self.lastOperation = key
-            print(key)
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -142,7 +164,7 @@ def main():
         # Everything that needs cooldown
         if pos.isHandOpen():
             s.operate('handOpen', s.lastCalled['handClosed'] >= s.lastCalled['handOpen'])
-        elif s.activeModes[s.index] == 'mouse mode' and (pos.areFingersStraight([1,2]) or pos.areFingersStraight([0,1,2]) or pos.areFingersStraight([1,2,4])):
+        elif s.modes[s.index] == 'mouse mode' and (pos.areFingersStraight([1,2]) or pos.areFingersStraight([0,1,2]) or pos.areFingersStraight([1,2,4])):
             newPos = [lmList[12][1], lmList[12][2]]
             firstCall = time.time() - s.lastCalled['indexMiddle'] > s.cooldownTime / 2
             # Thumb is out, so left click
@@ -151,6 +173,9 @@ def main():
             s.operate('pinkyIndexMiddle', pos.isFinger(4))
             s.settings['indexMiddle'][0](firstCall, newPos)
             s.lastCalled['indexMiddle'] = time.time()
+        elif pos.areFingersStraight([1,2,3,4]):
+            s.operate('indexMiddleRingPinky', s.lastOperation == 'indexMiddleRingPinky')
+            s.lastOperation = 'indexMiddleRingPinky'
         elif pos.areFingersStraight([1,2,3]):
             s.operate('indexMiddleRing')
         elif pos.areFingersStraight([1,2]):
@@ -161,6 +186,7 @@ def main():
             s.operate('index')
         elif pos.areFingersStraight([3]):
             s.operate('ring', s.lastOperation == 'ring')
+            s.lastOperation = 'ring'
         elif pos.areFingersStraight([4]):
             s.operate('pinky')
         elif pos.areFingersStraight([]):
