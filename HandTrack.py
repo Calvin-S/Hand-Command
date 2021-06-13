@@ -45,6 +45,7 @@ class settings():
         self.activeSettings = [1] * len(self.modes) # Tells us which modes are active
         self.index = 0
         self.lastOperation = 'reset'
+        self.lastSeen = 'reset'
         self.reset()
     
     def incIndex(self):
@@ -110,15 +111,15 @@ class settings():
             'indexMiddle': [self.keyboard.altTab, 2],
             'indexMiddleRing': [self.keyboard.winTab, 2],
             'index': [self.keyboard.enter, 1],
-            'thumb': [self.keyboard.leftArrow, 1],
-            'pinky': [self.keyboard.rightArrow, 1]}
+            'thumb': [self.keyboard.leftArrow, 0.6],
+            'pinky': [self.keyboard.rightArrow, 0.6]}
     
     def switchTabMode(self):
         self.settings = {
-            'thumb': [self.keyboard.ctrlShiftTab, 1],
-            'pinky': [self.keyboard.ctrlTab, 1],
-            'indexMiddle': [self.keyboard.scrollDown, 1],
-            'indexMiddleRing': [self.keyboard.scrollUp, 1]
+            'thumb': [self.keyboard.ctrlShiftTab, 0.6],
+            'pinky': [self.keyboard.ctrlTab, 0.6],
+            'indexMiddle': [self.keyboard.scrollDown, 0.6],
+            'indexMiddleRing': [self.keyboard.scrollUp, 0.6]
         }
 
     def musicMode(self):
@@ -126,7 +127,7 @@ class settings():
             'thumb': [self.keyboard.volumeup, 0.05],
             'pinky': [self.keyboard.volumedown, 0.05],
             'index': [self.keyboard.volumeMute, 1],
-            'indexMiddle': [self.keyboard.playpause, 2]
+            'indexMiddle': [self.keyboard.playpause, 1]
         }
 
     def modeSwitch(self):
@@ -134,11 +135,13 @@ class settings():
         self.keyboard.alert(self.modes[self.index])
         self.setMode()
     
-    def operate(self, key, optionalBool = True):
-        if time.time() - self.lastCalled[key] > self.cooldownTime * self.settings[key][1] and optionalBool:
+    def operate(self, key, optionalBool = True, overrideLastSeen = True):
+        if time.time() - self.lastCalled[key] > self.cooldownTime * self.settings[key][1] and optionalBool and (overrideLastSeen or self.lastSeen == key):
             self.settings[key][0]()
             self.lastCalled[key] = time.time()
             self.lastOperation = key
+            # print(key) # Uncomment to see what operation is being called
+        self.lastSeen = key
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -147,14 +150,12 @@ def main():
     s = settings()
     startTime = time.time()
     while True:
-        if time.time() - startTime > 120:
-            break
-        time.sleep(0.2)
+        # time.sleep(0.2) # Uncomment if this program takes too much CPU
         success, img0 = cap.read()
         imgRGB = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
         img = detector.findHands(img0, True)
         lmList = detector.findPosition(img)
-        cv2.imshow("Image", img0)
+        # cv2.imshow("Image", img0) # Uncomment to see how your hand is being detected
         if len(lmList) == 0:
             lastCooldownTrigger = time.time()
             cv2.waitKey(1)
@@ -174,8 +175,7 @@ def main():
             s.settings['indexMiddle'][0](firstCall, newPos)
             s.lastCalled['indexMiddle'] = time.time()
         elif pos.areFingersStraight([1,2,3,4]):
-            s.operate('indexMiddleRingPinky', s.lastOperation == 'indexMiddleRingPinky')
-            s.lastOperation = 'indexMiddleRingPinky'
+            s.operate('indexMiddleRingPinky')
         elif pos.areFingersStraight([1,2,3]):
             s.operate('indexMiddleRing')
         elif pos.areFingersStraight([1,2]):
@@ -185,15 +185,13 @@ def main():
         elif pos.areFingersStraight([1]):
             s.operate('index')
         elif pos.areFingersStraight([3]):
-            s.operate('ring', s.lastOperation == 'ring')
-            s.lastOperation = 'ring'
+            s.operate('ring')
         elif pos.areFingersStraight([4]):
             s.operate('pinky')
         elif pos.areFingersStraight([]):
             s.operate('handClosed')
         else:
             s.lastCalled['reset'] = time.time()
-            print("nothing")
 
         cv2.waitKey(1)
 
