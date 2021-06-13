@@ -191,6 +191,7 @@ def main():
         elif pos.areFingersStraight([]):
             s.operate('handClosed')
         else:
+            s.lastSeen = 'reset'
             s.lastCalled['reset'] = time.time()
 
         cv2.waitKey(1)
