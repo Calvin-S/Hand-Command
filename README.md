@@ -40,9 +40,15 @@ Open hand (all fingers out) - Switch modes
 
 Settings Window
 ```
-The four modes will show up on a new window where one has to manually (use the mouse) to change the settings as they wish and close the window to exit the settings.
+The four modes will show up on a new window.You have to manually 
+(use the mouse) change the settings as they wish.Finally, close the 
+window to exit the settings.
 
-Keeping a mode checked will keep that mode active when you switch modes, keeping a mode unchecked means that mode will never be switched to. For example, if we only want the music mode, we can uncheck everything but music mode (meaning switching modes will do nothing). Note that if everything is unchecked, then mouse mode will be on by default
+Keeping a mode checked will keep that mode active when you switch modes,
+ keeping a mode unchecked means that mode will never be switched to. 
+ For example, if we only want the music mode, we can uncheck everything 
+ but music mode (meaning switching modes will do nothing). Note that if 
+ everything is unchecked, then mouse mode will be on by default
 ```
 
 Mouse Mode
