@@ -96,7 +96,7 @@ class settings():
                 self.settings.update({i: [self.keyboard.nothing, 1]})
         self.settings.update({'ring': [exit, 4]})
         self.settings.update({'handOpen': [self.modeSwitch, 1]})
-        self.settings.update({'indexMiddleRingPinky': [self.updateSettings, 2]})
+        self.settings.update({'indexMiddleRingPinky': [self.updateSettings, 3]})
     
     # Sets to mouse mode with the corresponding hand positions and functions called
     def mouseMode(self):

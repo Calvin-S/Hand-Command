@@ -29,6 +29,8 @@ The commands below describe which fingers should be straight and out, all other 
 
 General Commands (included in all modes):
 ```
+Closed Fist - Do nothing
+
 Ring - Quit running the program
 
 Index, Middle, Ring, and Pinky  - Show settings window
