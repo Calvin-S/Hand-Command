@@ -16,7 +16,7 @@ Opencv: pip install opencv-contrib-python
 This project has been tested using python 3.9.5 on windows.
 
 ## QuickStart
-Run 'python HandTrack.py' and put your hand in a place where the camera can see and the program should automatically be in mouse mode. 
+Run ```python HandTrack.py``` and put your hand in a place where the camera can see and the program should automatically be in mouse mode. 
 
 Note: You can uncomment line 158 in HandTrack.py to see what your camera is seeing.
 
