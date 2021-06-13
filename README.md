@@ -41,7 +41,7 @@ Open hand (all fingers out) - Switch modes
 Settings Window
 ```
 The four modes will show up on a new window.You have to manually 
-(use the mouse) change the settings as they wish.Finally, close the 
+(use the mouse) change the settings as they wish. Finally, close the 
 window to exit the settings.
 
 Keeping a mode checked will keep that mode active when you switch modes,
