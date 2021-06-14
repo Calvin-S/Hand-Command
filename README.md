@@ -13,6 +13,8 @@ Mediapipe: pip install mediapipe
 
 Opencv: pip install opencv-contrib-python
 
+Pyautogui: pip install pyautogui
+
 This project has been tested using python 3.9.5 on windows.
 
 ## QuickStart
