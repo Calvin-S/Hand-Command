@@ -1,4 +1,4 @@
-# Hand Command
+# Hand Track
 Taking notes and your keyboard is too far away? You can now control your screen when you're too far away from the keyboard! 
 
 This project uses your camera and computer vision to create keyboard controls (aka for people like me who are too lazy to touch their keyboard to control their screens). 
